@@ -1,46 +1,80 @@
-# Notice
+# Desk Matrix Home Assistant Integration
 
-The component and platforms in this repository are not meant to be used by a
-user, but as a "blueprint" that custom component developers can build
-upon, to make more awesome stuff.
+A custom Home Assistant integration that turns an old tablet, Kindle, or DIY
+ESP32 display into a dedicated desk-side appliance controller.
 
-HAVE FUN! 😎
+This integration exposes a `media_player` entity that pushes compact JSON
+payloads to a local display device and a webhook endpoint for tap/callback
+actions from the screen.
 
-## Why?
+## Overview
 
-This is simple, by having custom_components look (README + structure) the same
-it is easier for developers to help each other and for users to start using them.
+- The custom integration code lives in `custom_components/integration_blueprint/`.
+- It creates a physical desk display controller entity in Home Assistant.
+- The display can receive payloads over HTTP or via MQTT routing.
+- Tap actions from the screen are handled through a local webhook and can
+  instantly trigger Home Assistant services.
 
-If you are a developer and you want to add things to this "blueprint" that you think more
-developers will have use for, please open a PR to add it :)
+## Install
 
-## What?
+1. Copy `custom_components/integration_blueprint/` into your Home Assistant
+   `config/custom_components/` directory.
+2. Restart Home Assistant.
+3. Configure the integration from the UI and provide the target display host.
+4. The integration creates a `media_player` entity for the desk display.
 
-This repository contains multiple files, here is a overview:
+## Features
 
-File | Purpose | Documentation
--- | -- | --
-`.devcontainer.json` | Used for development/testing with Visual Studio Code. | [Documentation](https://code.visualstudio.com/docs/remote/containers)
-`.github/ISSUE_TEMPLATE/*.yml` | Templates for the issue tracker | [Documentation](https://help.github.com/en/github/building-a-strong-community/configuring-issue-templates-for-your-repository)
-`custom_components/integration_blueprint/*` | Integration files, this is where everything happens. | [Documentation](https://developers.home-assistant.io/docs/creating_component_index)
-`CONTRIBUTING.md` | Guidelines on how to contribute. | [Documentation](https://help.github.com/en/github/building-a-strong-community/setting-guidelines-for-repository-contributors)
-`LICENSE` | The license file for the project. | [Documentation](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/licensing-a-repository)
-`README.md` | The file you are reading now, should contain info about the integration, installation and configuration instructions. | [Documentation](https://help.github.com/en/github/writing-on-github/basic-writing-and-formatting-syntax)
-`requirements.txt` | Python packages used for development/lint/testing this integration. | [Documentation](https://pip.pypa.io/en/stable/user_guide/#requirements-files)
+- `TURN_ON` / `TURN_OFF` support for wake/sleep display commands.
+- `PLAY_MEDIA` support for sending text or URL rendering payloads.
+- Optional MQTT routing when `device_host` starts with `mqtt://`.
+- Local webhook endpoint at `/api/integration_blueprint/tap` for handling screen taps.
 
-## How?
+## Device payloads
 
-1. Create a new repository in GitHub, using this repository as a template by clicking the "Use this template" button in the GitHub UI.
-1. Open your new repository in Visual Studio Code devcontainer (Preferably with the "`Dev Containers: Clone Repository in Named Container Volume...`" option).
-1. Rename all instances of the `integration_blueprint` to `custom_components/<your_integration_domain>` (e.g. `custom_components/awesome_integration`).
-1. Rename all instances of the `Integration Blueprint` to `<Your Integration Name>` (e.g. `Awesome Integration`).
-1. Run the `scripts/develop` to start HA and test out your new integration.
+The integration sends JSON payloads to the target device. By default it POSTs to
+`http://<device_host>/display`.
 
-## Next steps
+Render text:
 
-These are some next steps you may want to look into:
-- Add tests to your integration, [`pytest-homeassistant-custom-component`](https://github.com/MatthewFlamm/pytest-homeassistant-custom-component) can help you get started.
-- Add brand images (logo/icon).
-- Create your first release.
-- Share your integration on the [Home Assistant Forum](https://community.home-assistant.io/).
-- Submit your integration to [HACS](https://hacs.xyz/docs/publish/start).
+```json
+{ "command": "render_text", "text": "Hello Desk", "metadata": {} }
+```
+
+Render a URL:
+
+```json
+{ "command": "render_url", "url": "http://example.local/image.png", "metadata": {} }
+```
+
+Wake / Sleep commands:
+
+```json
+{ "command": "wake", "message": "Desk Matrix online" }
+{ "command": "sleep", "message": "Desk Matrix sleeping" }
+```
+
+## Tap webhook
+
+Devices can POST tap actions to the local webhook:
+
+`/api/integration_blueprint/tap`
+
+Example switch action:
+
+```json
+{ "action": "turn_on", "entity_id": "switch.desk_lamp" }
+```
+
+Example notify action:
+
+```json
+{ "action": "notify", "entity_id": "notify.mobile_app", "message": "Button pressed" }
+```
+
+## Notes
+
+- This integration is designed for simple desk displays and low-power screens.
+- It uses small deterministic JSON payloads rather than a full dashboard.
+- Use a local display script or app that can render these commands and send
+  tap callbacks back to Home Assistant.

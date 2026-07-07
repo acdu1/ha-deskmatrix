@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from .const import DEFAULT_DISPLAY_NAME
+
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.loader import Integration
@@ -23,3 +25,5 @@ class IntegrationBlueprintData:
     client: IntegrationBlueprintApiClient
     coordinator: BlueprintDataUpdateCoordinator
     integration: Integration
+    device_host: str | None = None
+    display_name: str = DEFAULT_DISPLAY_NAME

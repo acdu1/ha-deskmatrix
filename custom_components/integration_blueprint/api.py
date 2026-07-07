@@ -99,3 +99,26 @@ class IntegrationBlueprintApiClient:
             raise IntegrationBlueprintApiClientError(
                 msg,
             ) from exception
+
+    async def async_send_display_payload(self, device_host: str, payload: dict) -> None:
+        """Send a JSON payload to a simple local display device over HTTP.
+
+        The device_host can be a host:port pair (e.g. "192.168.1.42:8080") or a
+        fully qualified URL (e.g. "http://192.168.1.42:8080/display").
+        """
+        # Normalize to a URL if a bare host/host:port is provided.
+        if device_host.startswith("http://") or device_host.startswith("https://"):
+            url = device_host
+        else:
+            url = f"http://{device_host}/display"
+
+        try:
+            async with async_timeout.timeout(10):
+                response = await self._session.post(url, json=payload)
+                _verify_response_or_raise(response)
+        except TimeoutError as exception:
+            msg = f"Timeout when sending display payload - {exception}"
+            raise IntegrationBlueprintApiClientCommunicationError(msg) from exception
+        except (aiohttp.ClientError, socket.gaierror) as exception:
+            msg = f"Error sending display payload - {exception}"
+            raise IntegrationBlueprintApiClientCommunicationError(msg) from exception
